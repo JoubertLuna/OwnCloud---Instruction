@@ -1,0 +1,76 @@
+OwnCloud estável no Debian 10.8
+
+cat /etc/*-release
+
+A: Instalação de dependências:
+
+# apt install wget unzip apache2 mysql-server libapache2-mod-php7.0 php7.0-gd php7.0-json
+php7.0-mysql php7.0-curl php7.0-intl php7.0-mcrypt php-imagick php7.0-zip php7.0-xml php7.0-
+mbstring php-apcu php-redis redis-server php7.0-ldap php-smbclient -yfm
+
+B: Entrar na pasta www, baixar a versão 10 do OwnCloud e extraí-la:
+
+# cd /var/www && wget https://download.owncloud.org/community/owncloud-10.0.6.zip &&
+unzip owncloud-10.0.6.zip
+
+C: Criar o arquivo de configuração no Apache e preenchê-lo com os dados abaixo:
+
+# nano /etc/apache2/sites-available/owncloud.conf
+
+Alias /owncloud "/var/www/owncloud/"
+
+<Directory /var/www/owncloud/>
+Options +FollowSymlinks
+AllowOverride All
+<IfModule mod_dav.c>
+Dav off
+</IfModule>
+SetEnv HOME /var/www/owncloud
+SetEnv HTTP_HOME /var/www/owncloud
+</Directory>
+
+# ln -s /etc/apache2/sites-available/owncloud.conf /etc/apache2/sites-enabled/owncloud.conf
+
+D: Ativar extensões do Apache e reiniciá-lo juntamente com o mysql:
+
+# a2enmod ssl && a2ensite default-ssl && a2enmod rewrite && a2enmod headers && a2enmod
+env && a2enmod dir && a2enmod mime && service apache2 restart && service mysql start
+
+E: Mudar permissões no diretório:
+
+# chown -R www-data:www-data /var/www/owncloud/
+
+F: Entrar no MySQL/MariaDB como root e fazer as configurações:
+
+mysql> create database owncloud;
+mysql> CREATE USER 'cloud' IDENTIFIED BY 'SUA_SENHA';
+mysql> GRANT ALL PRIVILEGES ON owncloud.* TO 'cloud';
+mysql> FLUSH PRIVILEGES;
+
+G: Entrar em https://ip_do_owncloud/owncloud e preencher as configurações de acordo com o feito para o banco de dados. Vai demorar até finalizar. 
+
+Administrador
+DEFINA UMA SENHA PARA O ADMINISTRADOR
+A pasta usada pelo banco de dados geralmente é /var/www/owncloud/data.
+
+Colocando senha no maria db
+
+systemctl stop mysql
+systemctl stop mariadb
+mysqld_safe --skip-grant-tables --skip-networking &
+mysql -u root
+FLUSH PRIVILEGES;
+SET PASSWORD FOR 'root'@'localhost' = PASSWORD('....');
+
+Para o MySQL, use:
+
+mysql
+MariaDB [(none)]>
+Depois, para alterar a senha do root, use o comando:
+SET PASSWORD FOR 'root'@'localhost' = PASSWORD('....');
+
+Se não der certo por algum motivo, e deveria ter dado certo, você pode alterar direto a senha na tabela:
+
+UPDATE mysql.user SET authentication_string = PASSWORD('MINHA SENHA') WHERE User = 'root' AND Host = 'localhost';
+
+Joubert Luna
